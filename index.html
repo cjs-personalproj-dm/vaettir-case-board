@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Case Board</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.45;
+      color: #000;
+      background: #fff;
+      margin: 0;
+      padding: 24px;
+    }
+
+    .wrap {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin: 0 0 4px;
+    }
+
+    .sub {
+      color: #555;
+      margin-bottom: 18px;
+    }
+
+    .controls {
+      margin-bottom: 6px;
+    }
+
+    input[type="search"] {
+      font: inherit;
+      padding: 4px 6px;
+      width: 180px;
+    }
+
+    button {
+      font: inherit;
+      padding: 4px 10px;
+      margin-left: 4px;
+      cursor: pointer;
+    }
+
+    button.on {
+      font-weight: bold;
+    }
+
+    .note {
+      color: #555;
+      font-size: 13px;
+      margin: 8px 0 16px;
+    }
+
+    #board {
+      position: relative;
+    }
+
+    #threads {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .cols {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      .cols {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .cols {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    h2 {
+      font-size: 14px;
+      margin: 0 0 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #000;
+    }
+
+    .card {
+      border: 1px solid #999;
+      background: #fff;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    .card.q {
+      border-style: dashed;
+    }
+
+    .card.dimmed {
+      opacity: 0.25;
+    }
+
+    .card.focused {
+      border-color: #000;
+      border-width: 2px;
+      padding: 7px 9px;
+    }
+
+    .name {
+      font-weight: bold;
+    }
+
+    .tag {
+      color: #555;
+      font-size: 13px;
+      font-weight: normal;
+    }
+
+    ul {
+      margin: 6px 0 0;
+      padding-left: 18px;
+    }
+
+    li {
+      margin-bottom: 2px;
+    }
+
+    .src {
+      color: #777;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    footer {
+      color: #555;
+      font-size: 13px;
+      margin-top: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <h1>Case Board</h1>
+    <div class="sub">I'm trying something, hopefully this actually works and render lol. I thought it would be cool to have a mystery/investigation board where things can be pinned and have connections and things that is semi-interactive. My html is hella scuffed tho so bear with me if this breaks.</div>
+
+    <div class="controls">
+      <input type="search" id="q" placeholder="Search" autocomplete="off">
+      <button data-s="1">Session 1</button>
+      <button data-s="2">Session 2</button>
+      <button data-s="3">Session 3</button>
+      <button id="clear">Show all</button>
+    </div>
+
+    <div class="note">
+      Ideally, if you click a card, it should highlight any linked cards. If this works right. Lmao.
+    </div>
+
+    <div id="board">
+      <svg id="threads"></svg>
+      <div class="cols" id="cols"></div>
+    </div>
+
+    <footer id="foot"></footer>
+
+  </div>
+  <script>
+    const UPDATED = "before session 3 - WIP";
+
+    const CARDS = [
+      // People
+      {
+        id: 'olga', name: 'Olga', col: 'people', tag: 'dead', session: 1,
+        lines: [],
+        links: ['collective', 'katerina', 'cave', 'entanglewand']
+      },
+      {
+        id: 'magnus', name: 'Magnus Linden', col: 'people', tag: 'dead', session: 1,
+        lines: [],
+        links: ['lighthouse', 'ledgers', 'staff', 'katerina']
+      },
+      {
+        id: 'katerina', name: 'Katerina Jonsson', col: 'people', tag: '', session: 1,
+        lines: [],
+        links: ['gloson', 'magnus', 'olga']
+      },
+      {
+        id: 'collective', name: "Olga's Cult", col: 'people', tag: '', session: 2,
+        lines: [],
+        links: ['olga']
+      },
+      {
+        id: 'painter', name: 'The Painter', col: 'people', tag: '', session: 1,
+        lines: [],
+        links: ['raven', 'vision1']
+      },
+
+      // Places and events
+      {
+        id: 'lighthouse', name: 'The Lighthouse', col: 'places', tag: '', session: 1,
+        lines: [],
+        links: ['ledgers', 'cave', 'vision1']
+      },
+      {
+        id: 'cave', name: 'The Rooting Cave', col: 'places', tag: '', session: 2,
+        lines: [],
+        links: ['lighthouse']
+      },
+      {
+        id: 'gloson', name: 'The Gloson', col: 'places', tag: 'gone', session: 2,
+        lines: [],
+        links: ['katerina', 'staff']
+      },
+      {
+        id: 'vision1', name: "Ziggy's Vision", col: 'places', tag: '', session: 1,
+        lines: [],
+        links: ['crystal', 'lighthouse']
+      },
+
+      // Clues, evidence, and weird things
+      {
+        id: 'crystal', name: 'The Crystal', col: 'evidence', tag: '', session: 2,
+        lines: [],
+        links: ['vision1']
+      },
+      {
+        id: 'ledgers', name: 'The Lighthouse Ledgers', col: 'evidence', tag: 'we have it', session: 2,
+        lines: [],
+        links: ['magnus']
+      },
+      {
+        id: 'staff', name: 'The Lindenwood Staff', col: 'evidence', tag: 'broken', session: 2,
+        lines: [],
+        links: ['magnus', 'gloson']
+      },
+      {
+        id: 'entanglewand', name: 'Wand of Entangle', col: 'evidence', tag: 'we have it', session: 1,
+        lines: [],
+        links: ['olga']
+      },
+      {
+        id: 'raven', name: 'The Painters Bird', col: 'evidence', tag: '', session: 1,
+        lines: [],
+        links: ['painter']
+      },
+
+      // Open threads
+      {
+        id: 'q_recording', name: "What's the deal with the recording on the crystal", col: 'questions', tag: '', session: 2,
+        lines: [],
+        links: ['crystal', 'vision1']
+      },
+      {
+        id: 'q_why', name: 'Why did the Painter send the party to Osthammar?', col: 'questions', tag: '', session: 1,
+        lines: [],
+        links: ['painter', 'vision1']
+      },
+      {
+        id: 'q_olgatold', name: 'What was Olga really doing in Osthammar?', col: 'questions', tag: '', session: 2,
+        lines: [],
+        links: ['olga', 'cave']
+      },
+      {
+        id: 'q_katerina', name: 'What will happen to Katerina?', col: 'questions', tag: '', session: 2,
+        lines: [],
+        links: ['katerina']
+      },
+      {
+        id: 'q_gloson', name: 'Where did the Gloson go?', col: 'questions', tag: '', session: 2,
+        lines: [],
+        links: ['gloson']
+      },
+      {
+        id: 'q_ledgers', name: 'What else is in the lighthouse ledgers?', col: 'questions', tag: '', session: 2,
+        lines: [],
+        links: ['magnus', 'ledgers']
+      },
+      {
+        id: 'q_katerina_wealth', name: 'What happened to the thing Katerina sold?', col: 'questions', tag: '', session: 2,
+        lines: [],
+        links: ['katerina', 'lighthouse']
+      }
+    ];
+
+    const COLS = [
+      { key: 'people', title: 'People' },
+      { key: 'places', title: 'Places & Events' },
+      { key: 'evidence', title: 'Clues, Evidence, and Weird Things' },
+      { key: 'questions', title: 'Open Questions' }
+    ];
+
+    const colsEl = document.getElementById('cols');
+    const svg = document.getElementById('threads');
+    const board = document.getElementById('board');
+    const byId = Object.fromEntries(CARDS.map(card => [card.id, card]));
+    let focused = null;
+
+    document.getElementById('foot').textContent = `Updated ${UPDATED}`;
+
+    COLS.forEach(col => {
+      const columnEl = document.createElement('div');
+      const heading = document.createElement('h2');
+      heading.textContent = col.title;
+      columnEl.appendChild(heading);
+
+      CARDS.filter(card => card.col === col.key).forEach(card => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'card' + (col.key === 'questions' ? ' q' : '');
+        cardEl.dataset.id = card.id;
+
+        let html = `<div class="name">${card.name}${card.tag ? ` <span class="tag">(${card.tag})</span>` : ''}</div>`;
+        if (card.lines && card.lines.length) {
+          html += `<ul>${card.lines.map(line => `<li>${line}</li>`).join('')}</ul>`;
+        }
+        html += `<div class="src">Session ${card.session}</div>`;
+        cardEl.innerHTML = html;
+
+        cardEl.addEventListener('click', event => {
+          event.stopPropagation();
+          focus(card.id === focused ? null : card.id);
+        });
+        columnEl.appendChild(cardEl);
+      });
+      colsEl.appendChild(columnEl);
+    });
+
+    const cardEls = [...document.querySelectorAll('.card')];
+
+    const EDGES = (() => {
+      const seen = new Set();
+      const edges = [];
+      CARDS.forEach(card => (card.links || []).forEach(target => {
+        if (!byId[target]) return;
+        const key = [card.id, target].sort().join('|');
+        if (seen.has(key)) return;
+        seen.add(key);
+        edges.push([card.id, target]);
+      }));
+      return edges;
+    })();
+
+    function box(id) {
+      const el = document.querySelector(`.card[data-id="${id}"]`);
+      if (!el || el.style.display === 'none') return null;
+      const rect = el.getBoundingClientRect();
+      const boardRect = board.getBoundingClientRect();
+      return {
+        x: rect.left - boardRect.left + rect.width / 2,
+        y: rect.top - boardRect.top + rect.height / 2,
+        left: rect.left - boardRect.left,
+        right: rect.right - boardRect.left
+      };
+    }
+
+    function drawThreads() {
+      const boardRect = board.getBoundingClientRect();
+      svg.setAttribute('width', boardRect.width);
+      svg.setAttribute('height', board.scrollHeight);
+      svg.setAttribute('viewBox', `0 0 ${boardRect.width} ${board.scrollHeight}`);
+
+      let paths = '';
+      EDGES.forEach(([sourceId, targetId]) => {
+        const from = box(sourceId);
+        const to = box(targetId);
+        if (!from || !to) return;
+        const active = focused && (focused === sourceId || focused === targetId);
+        const faded = focused && !active;
+        const startX = from.x < to.x ? from.right : from.left;
+        const endX = from.x < to.x ? to.left : to.right;
+        const midX = (startX + endX) / 2;
+        paths += `<path d="M ${startX} ${from.y} C ${midX} ${from.y}, ${midX} ${to.y}, ${endX} ${to.y}" fill="none" stroke="${active ? '#8b0000' : '#e0a0a0'}" stroke-width="${active ? 1.5 : 1}" opacity="${faded ? 0.15 : 1}"/>`;
+      });
+      svg.innerHTML = paths;
+    }
+
+    function focus(id) {
+      focused = id;
+      if (!id) {
+        cardEls.forEach(el => el.classList.remove('dimmed', 'focused'));
+        drawThreads();
+        return;
+      }
+      const neighbors = new Set([id]);
+      EDGES.forEach(([sourceId, targetId]) => {
+        if (sourceId === id) neighbors.add(targetId);
+        if (targetId === id) neighbors.add(sourceId);
+      });
+      cardEls.forEach(el => {
+        el.classList.toggle('focused', el.dataset.id === id);
+        el.classList.toggle('dimmed', !neighbors.has(el.dataset.id));
+      });
+      drawThreads();
+    }
+
+    document.body.addEventListener('click', () => focus(null));
+
+    const searchEl = document.getElementById('q');
+    let session = null;
+
+    function applyFilter() {
+      const term = searchEl.value.trim().toLowerCase();
+      cardEls.forEach(el => {
+        const card = byId[el.dataset.id];
+        const haystack = `${card.name} ${card.tag || ''} ${(card.lines || []).join(' ')}`.toLowerCase();
+        const matchesTerm = !term || haystack.includes(term);
+        const matchesSession = !session || String(card.session) === String(session);
+        el.style.display = (matchesTerm && matchesSession) ? '' : 'none';
+      });
+      focus(null);
+      requestAnimationFrame(drawThreads);
+    }
+
+    searchEl.addEventListener('input', applyFilter);
+    searchEl.addEventListener('click', event => event.stopPropagation());
+
+    document.querySelectorAll('button[data-s]').forEach(btn => {
+      btn.addEventListener('click', event => {
+        event.stopPropagation();
+        session = (session === btn.dataset.s) ? null : btn.dataset.s;
+        document.querySelectorAll('button[data-s]')
+          .forEach(b => b.classList.toggle('on', b.dataset.s === session));
+        applyFilter();
+      });
+    });
+
+    document.getElementById('clear').addEventListener('click', event => {
+      event.stopPropagation();
+      session = null;
+      searchEl.value = '';
+      document.querySelectorAll('button[data-s]').forEach(b => b.classList.remove('on'));
+      applyFilter();
+    });
+
+    window.addEventListener('resize', drawThreads);
+    window.addEventListener('load', drawThreads);
+    setTimeout(drawThreads, 60);
+    setTimeout(drawThreads, 400);
+  </script>
+</body>
+</html>
