@@ -106,6 +106,36 @@
       border-style: dashed;
     }
 
+    /* answered questions switch from dashed to solid */
+    .card.q.answered {
+      border-style: solid;
+      border-color: #2a6b2a;
+    }
+
+    .card.q.partial {
+      border-color: #8a6d1f;
+    }
+
+    .status {
+      font-size: 12px;
+      font-weight: normal;
+      border: 1px solid;
+      border-radius: 2px;
+      padding: 0 4px;
+      margin-left: 4px;
+      white-space: nowrap;
+    }
+
+    .status.answered {
+      color: #2a6b2a;
+      border-color: #2a6b2a;
+    }
+
+    .status.partial {
+      color: #8a6d1f;
+      border-color: #8a6d1f;
+    }
+
     .card.dimmed {
       opacity: 0.25;
     }
@@ -166,11 +196,13 @@
       <button data-s="1">Session 1</button>
       <button data-s="2">Session 2</button>
       <button data-s="3">Session 3</button>
+      <button id="hideAnswered">Hide answered</button>
       <button id="clear">Show all</button>
     </div>
 
     <div class="note">
       Ideally, if you click a card, it should highlight any linked cards. If this works right. Lmao.
+      Questions are dashed while they're open, and go solid once they're answered.
     </div>
 
     <div id="board">
@@ -182,7 +214,7 @@
 
   </div>
   <script>
-    const UPDATED = "before session 3 - WIP";
+    const UPDATED = "after session 3 - notes still WIP";
 
     const CARDS = [
       // People
@@ -216,6 +248,41 @@
         lines: [],
         links: ['katerina', 'staff']
       },
+      {
+        id: 'blindfolded', name: 'The Blindfolded Woman', col: 'people', tag: '', session: 3,
+        lines: [],
+        links: ['vision2', 'raven', 'painter', 'greathall']
+      },
+      {
+        id: 'buyer', name: 'The Buyer', col: 'people', tag: '', session: 3,
+        lines: [],
+        links: ['katerina', 'gem', 'ship', 'olga']
+      },
+      {
+        id: 'ebba', name: 'Ebba Kielsen', col: 'people', tag: '', session: 3,
+        lines: [],
+        links: ['hjortsater', 'bell', 'ship', 'erlend']
+      },
+      {
+        id: 'erlend', name: 'Brother Erlend', col: 'people', tag: '', session: 3,
+        lines: [],
+        links: ['hjortsater', 'sigrun', 'wasting']
+      },
+      {
+        id: 'sigrun', name: 'Sigrun', col: 'people', tag: '', session: 3,
+        lines: [],
+        links: ['hjortsater', 'bell', 'idol']
+      },
+      {
+        id: 'halvar', name: 'Halvar Hulda', col: 'people', tag: 'sick', session: 3,
+        lines: [],
+        links: ['hjortsater', 'wasting']
+      },
+      {
+        id: 'ingrid', name: 'Ingrid', col: 'people', tag: '', session: 3,
+        lines: [],
+        links: ['hjortsater', 'ship', 'bell']
+      },
 
       // Places and events
       {
@@ -232,6 +299,26 @@
         id: 'vision1', name: "Ziggy's Vision", col: 'places', tag: '', session: 1,
         lines: [],
         links: ['crystal', 'lighthouse']
+      },
+      {
+        id: 'vision2', name: "Fiadh's Vision", col: 'places', tag: '', session: 3,
+        lines: [],
+        links: ['blindfolded', 'raven', 'vision1', 'greathall']
+      },
+      {
+        id: 'greathall', name: 'The Door to the Great Hall', col: 'places', tag: '', session: 3,
+        lines: [],
+        links: ['vision2']
+      },
+      {
+        id: 'hjortsater', name: 'Hjortsäter', col: 'places', tag: '', session: 3,
+        lines: [],
+        links: ['bell', 'wasting', 'ship']
+      },
+      {
+        id: 'nightbell', name: 'The Bell in the Night', col: 'places', tag: '', session: 3,
+        lines: [],
+        links: ['hjortsater', 'bell']
       },
 
       // Clues, evidence, and weird things
@@ -260,6 +347,36 @@
         id: 'raven', name: 'The Painters Bird', col: 'evidence', tag: '', session: 1,
         lines: [],
         links: ['painter']
+      },
+      {
+        id: 'gem', name: 'The Lighthouse Gem', col: 'evidence', tag: 'sold', session: 3,
+        lines: [],
+        links: ['lighthouse', 'katerina', 'buyer']
+      },
+      {
+        id: 'ship', name: 'The Ship from Stockholm', col: 'evidence', tag: '', session: 3,
+        lines: [],
+        links: ['ledgers', 'buyer', 'bell']
+      },
+      {
+        id: 'bell', name: 'The Missing Bell', col: 'evidence', tag: '', session: 3,
+        lines: [],
+        links: ['hjortsater', 'idol']
+      },
+      {
+        id: 'idol', name: 'The Wooden Idol', col: 'evidence', tag: 'in party possesion', session: 3,
+        lines: [],
+        links: ['bell']
+      },
+      {
+        id: 'wasting', name: 'The Wasting Sickness', col: 'evidence', tag: '', session: 3,
+        lines: [],
+        links: ['hjortsater']
+      },
+      {
+        id: 'footsteps', name: 'The Footsteps at the Estate', col: 'evidence', tag: '', session: 3,
+        lines: [],
+        links: []
       },
 
       // Open threads
@@ -290,13 +407,62 @@
       },
       {
         id: 'q_ledgers', name: 'What else is in the lighthouse ledgers?', col: 'questions', tag: '', session: 2,
-        lines: [],
-        links: ['magnus', 'ledgers']
+        status: 'answered',
+        lines: [
+          'Most of the recent entries are just Magnus keeping tabs on Katerina.',
+          'Older entries mention a ship he didn\'t recognize, passing by the coast closesly 5 times over the course of a month, starting 2.5 months ago.',
+          'The ship was newly built from dark southern wood, and carried a small crew without any working gear.',
+          'There is evidence that the magic of the lighthouse and its keepers used to be stronger',
+          'Fiadh returned the ledgers to the lighthouse'
+        ],
+        links: ['magnus', 'ledgers', 'ship', 'buyer']
       },
       {
         id: 'q_katerina_wealth', name: 'What happened to the thing Katerina sold?', col: 'questions', tag: '', session: 2,
+        status: 'partial',
+        lines: [
+          'It was a gem she took from the top of the lighthouse. She described it as natural, uncut, and big enough to holdnin two palms.',
+          'The gem was Yellow with a glow like sunlight, plus some blue streaks that only show up when you catch it at the right angle.',
+          'She sold it in Stockholm to a mysterious buyer offering too much money.',
+          'She can\'t describe his face at all, and she remembered him asking her questions about herself before she could even see him fully',
+          'He was dressed warm for sailing'
+        ],
+        links: ['katerina', 'lighthouse', 'gem', 'buyer']
+      },
+      {
+        id: 'q_blindfolded', name: 'Who is the blindfolded woman?', col: 'questions', tag: '', session: 3,
         lines: [],
-        links: ['katerina', 'lighthouse']
+        links: ['blindfolded', 'vision2', 'greathall']
+      },
+      {
+        id: 'q_twochannels', name: 'Is the Painter the only one sending us visions?', col: 'questions', tag: '', session: 3,
+        lines: [],
+        links: ['painter', 'blindfolded', 'raven', 'vision2']
+      },
+      {
+        id: 'q_buyer', name: 'Who is the buyer, and what is he collecting?', col: 'questions', tag: '', session: 3,
+        lines: [],
+        links: ['buyer', 'gem', 'bell', 'ship']
+      },
+      {
+        id: 'q_ship', name: 'Where did the ship go?', col: 'questions', tag: '', session: 3,
+        lines: [],
+        links: ['ship', 'ledgers', 'ingrid']
+      },
+      {
+        id: 'q_wasting', name: 'What is killing people in Hjortsäter?', col: 'questions', tag: '', session: 3,
+        lines: [],
+        links: ['wasting', 'halvar', 'hjortsater']
+      },
+      {
+        id: 'q_bell', name: 'Why did Ebba sell the bell, and what did it do?', col: 'questions', tag: '', session: 3,
+        lines: [],
+        links: ['bell', 'ebba', 'sigrun', 'idol', 'nightbell']
+      },
+      {
+        id: 'q_footsteps', name: 'Whose footsteps did Fiadh hear?', col: 'questions', tag: '', session: 3,
+        lines: [],
+        links: ['footsteps']
       }
     ];
 
@@ -306,6 +472,14 @@
       { key: 'evidence', title: 'Clues, Evidence, and Weird Things' },
       { key: 'questions', title: 'Open Questions' }
     ];
+
+    // questions can have status 'partial' or 'answered', no status means open
+    const STATUS = {
+      partial: 'partly answered',
+      answered: 'answered'
+    };
+
+    const statusOf = card => (STATUS[card.status] ? card.status : null);
 
     const colsEl = document.getElementById('cols');
     const svg = document.getElementById('threads');
@@ -322,11 +496,14 @@
       columnEl.appendChild(heading);
 
       CARDS.filter(card => card.col === col.key).forEach(card => {
+        const status = statusOf(card);
         const cardEl = document.createElement('div');
-        cardEl.className = 'card' + (col.key === 'questions' ? ' q' : '');
+        cardEl.className = 'card'
+          + (col.key === 'questions' ? ' q' : '')
+          + (status ? ` ${status}` : '');
         cardEl.dataset.id = card.id;
 
-        let html = `<div class="name">${card.name}${card.tag ? ` <span class="tag">(${card.tag})</span>` : ''}</div>`;
+        let html = `<div class="name">${card.name}${card.tag ? ` <span class="tag">(${card.tag})</span>` : ''}${status ? ` <span class="status ${status}">${STATUS[status]}</span>` : ''}</div>`;
         if (card.lines && card.lines.length) {
           html += `<ul>${card.lines.map(line => `<li>${line}</li>`).join('')}</ul>`;
         }
@@ -337,7 +514,7 @@
         cardEl.innerHTML = html;
 
         cardEl.addEventListener('click', event => {
-          // don't toggle focus when someone is just working the player
+          // ignore clicks on the audio player
           if (event.target.closest('audio')) return;
           event.stopPropagation();
           focus(card.id === focused ? null : card.id);
@@ -418,16 +595,20 @@
     document.body.addEventListener('click', () => focus(null));
 
     const searchEl = document.getElementById('q');
+    const hideBtn = document.getElementById('hideAnswered');
     let session = null;
+    let hideAnswered = false;
 
     function applyFilter() {
       const term = searchEl.value.trim().toLowerCase();
       cardEls.forEach(el => {
         const card = byId[el.dataset.id];
-        const haystack = `${card.name} ${card.tag || ''} ${(card.lines || []).join(' ')}`.toLowerCase();
+        const status = statusOf(card);
+        const haystack = `${card.name} ${card.tag || ''} ${status ? STATUS[status] : ''} ${(card.lines || []).join(' ')}`.toLowerCase();
         const matchesTerm = !term || haystack.includes(term);
         const matchesSession = !session || String(card.session) === String(session);
-        el.style.display = (matchesTerm && matchesSession) ? '' : 'none';
+        const matchesStatus = !hideAnswered || status !== 'answered';
+        el.style.display = (matchesTerm && matchesSession && matchesStatus) ? '' : 'none';
       });
       focus(null);
       requestAnimationFrame(drawThreads);
@@ -446,10 +627,19 @@
       });
     });
 
+    hideBtn.addEventListener('click', event => {
+      event.stopPropagation();
+      hideAnswered = !hideAnswered;
+      hideBtn.classList.toggle('on', hideAnswered);
+      applyFilter();
+    });
+
     document.getElementById('clear').addEventListener('click', event => {
       event.stopPropagation();
       session = null;
+      hideAnswered = false;
       searchEl.value = '';
+      hideBtn.classList.remove('on');
       document.querySelectorAll('button[data-s]').forEach(b => b.classList.remove('on'));
       applyFilter();
     });
