@@ -141,6 +141,13 @@
       margin-top: 6px;
     }
 
+    audio {
+      display: block;
+      width: 100%;
+      margin-top: 8px;
+      height: 32px;
+    }
+
     footer {
       color: #555;
       font-size: 13px;
@@ -231,6 +238,7 @@
       {
         id: 'crystal', name: 'The Crystal', col: 'evidence', tag: 'in party possesion', session: 2,
         lines: [],
+        audio: 'audio/crystal.mp3',
         links: ['vision1']
       },
       {
@@ -322,10 +330,15 @@
         if (card.lines && card.lines.length) {
           html += `<ul>${card.lines.map(line => `<li>${line}</li>`).join('')}</ul>`;
         }
+        if (card.audio) {
+          html += `<audio controls preload="none" src="${card.audio}"></audio>`;
+        }
         html += `<div class="src">Session ${card.session}</div>`;
         cardEl.innerHTML = html;
 
         cardEl.addEventListener('click', event => {
+          // don't toggle focus when someone is just working the player
+          if (event.target.closest('audio')) return;
           event.stopPropagation();
           focus(card.id === focused ? null : card.id);
         });
